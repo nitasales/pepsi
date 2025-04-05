@@ -274,16 +274,31 @@
              
              if (hasBoxes || hasLoose) {
                  submitButton.classList.add('active');
+                 submitButton.style.pointerEvents = 'auto';
              } else {
                  submitButton.classList.remove('active');
+                 submitButton.style.pointerEvents = 'none';
              }
          }
          
-         // Add event listener for checkbox changes
-         document.addEventListener('change', function(e) {
-             if (e.target.type === 'checkbox') {
-                 updateSubmitButton();
-             }
+         // Add event listeners for all input changes
+         document.addEventListener('DOMContentLoaded', function() {
+             // Initial button state
+             updateSubmitButton();
+             
+             // Listen for all input changes
+             document.addEventListener('input', function(e) {
+                 if (e.target.type === 'number' || e.target.type === 'checkbox') {
+                     updateSubmitButton();
+                 }
+             });
+             
+             // Listen for all changes
+             document.addEventListener('change', function(e) {
+                 if (e.target.type === 'number' || e.target.type === 'checkbox') {
+                     updateSubmitButton();
+                 }
+             });
          });
          
          function initializeSlider() {
@@ -377,7 +392,7 @@
              products.forEach(product => {
                  const boxQty = parseInt(document.getElementById(`${product.id}_box`).value) || 0;
                  const looseCheckbox = document.getElementById(`${product.id}_loose`);
-                 const looseQty = looseCheckbox.checked ? product.fixed_loose_qty : 0;
+                 const looseQty = looseCheckbox && looseCheckbox.checked ? product.fixed_loose_qty : 0;
          
                  if (boxQty > 0 || looseQty > 0) {
                      const productTotal = calculateTotal(product, boxQty, looseQty);
