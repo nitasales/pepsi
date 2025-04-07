@@ -85,74 +85,74 @@
          let productGroups = {};
          
          async function loadProducts() {
-         try {
-         const response = await fetch('https://nitasales.github.io/pepsi/products.csv');
-         if (!response.ok) {
-             throw new Error(`HTTP error! status: ${response.status}`);
-         }
-         const csvText = await response.text();
-         const rows = csvText.split('\n').slice(1);
-         
-         let groupOrder = [];
-         products = rows
-             .filter(row => row.trim())
-             .map(row => {
-                 const [id, name, size, group_id, box_price, piece_price, image_url, fixed_loose_qty, display_name] = row.split(',').map(field => field.trim());
-         
-                 // Maintain the order of group_ids as they appear
-                 if (!groupOrder.includes(group_id)) {
-                     groupOrder.push(group_id);
+             try {
+                 const SHEET_ID = 'e/2PACX-1vQ3zvum-860SfFbMqTcJ7Kc1Um1a3PJON5VKAvCcVCvpZyCb_yUJi42P2DndTeQNLo9J_jlsd90b-Gr';
+                 const response = await fetch(
+                     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv`
+                 );
+                 
+                 if (!response.ok) {
+                     throw new Error(`HTTP error! status: ${response.status}`);
                  }
-         
-                 return {
-                     id,
-                     name,
-                     size,
-                     group_id,
-                     box_price: parseInt(box_price),
-                     piece_price: parseInt(piece_price),
-                     image_url,
-                     fixed_loose_qty: parseInt(fixed_loose_qty),
-                     display_name: display_name || group_id
-                 };
-             });
-         
-         if (products.length === 0) {
-             throw new Error('No products found in the CSV file');
-         }
-         
-         // Group products by group_id
-         products.forEach(product => {
-             if (!productGroups[product.group_id]) {
-                 productGroups[product.group_id] = {
-                     name: product.display_name,
-                     products: [],
-                     images: new Set()
-                 };
+                 const csvText = await response.text();
+                 const rows = csvText.split('\n').slice(1);
+                 
+                 let groupOrder = [];
+                 products = rows
+                     .filter(row => row.trim())
+                     .map(row => {
+                         const [id, name, size, group_id, box_price, piece_price, image_url, fixed_loose_qty, display_name] = row.split(',').map(field => field.trim());
+                         
+                         if (!groupOrder.includes(group_id)) {
+                             groupOrder.push(group_id);
+                         }
+                         
+                         return {
+                             id,
+                             name,
+                             size,
+                             group_id,
+                             box_price: parseInt(box_price),
+                             piece_price: parseInt(piece_price),
+                             image_url,
+                             fixed_loose_qty: parseInt(fixed_loose_qty),
+                             display_name: display_name || group_id
+                         };
+                     });
+                 
+                 if (products.length === 0) {
+                     throw new Error('No products found in the Google Sheet');
+                 }
+                 
+                 products.forEach(product => {
+                     if (!productGroups[product.group_id]) {
+                         productGroups[product.group_id] = {
+                             name: product.display_name,
+                             products: [],
+                             images: new Set()
+                         };
+                     }
+                     productGroups[product.group_id].products.push(product);
+                     if (product.image_url) {
+                         productGroups[product.group_id].images.add(product.image_url);
+                     }
+                 });
+                 
+                 productGroups = Object.fromEntries(
+                     groupOrder
+                         .filter(group_id => productGroups[group_id])
+                         .map(group_id => [group_id, productGroups[group_id]])
+                 );
+                 
+                 renderProducts();
+             } catch (error) {
+                 console.error('Error loading products:', error);
+                 document.getElementById('error').innerHTML = `
+                     Error loading products: ${error.message}<br>
+                     Please make sure the Google Sheet is published and accessible.
+                 `;
              }
-             productGroups[product.group_id].products.push(product);
-             if (product.image_url) {
-                 productGroups[product.group_id].images.add(product.image_url);
-             }
-         });
-         
-         // Sort productGroups based on groupOrder
-         productGroups = Object.fromEntries(
-             groupOrder
-                 .filter(group_id => productGroups[group_id]) // Ensure only valid groups are included
-                 .map(group_id => [group_id, productGroups[group_id]])
-         );
-         
-         renderProducts();
-         } catch (error) {
-         console.error('Error loading products:', error);
-         document.getElementById('error').innerHTML = `
-             Error loading products: ${error.message}<br>
-             Please make sure products.csv is in the same directory as this HTML file.
-         `;
          }
-         }
-         
          
          function renderProducts() {
              const productsContainer = document.querySelector('.item_warp');
